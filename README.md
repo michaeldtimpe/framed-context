@@ -1,4 +1,4 @@
-# snapctx
+# framed-context
 
 Load condensed project context into [Claude Code](https://claude.com/claude-code)
 as pixel-font PNG images — SnapCompact-style visual context compression,
@@ -62,8 +62,8 @@ Requires Python 3 with Pillow, and a high-resolution-vision Claude model
 destroys the font).
 
 ```sh
-git clone https://github.com/michaeldtimpe/snapctx
-cd snapctx && ./install.sh   # copies the skill to ~/.claude/skills/loadcontext
+git clone https://github.com/michaeldtimpe/framed-context
+cd framed-context && ./install.sh   # copies the skill to ~/.claude/skills/loadcontext
 ```
 
 Then in any project, in Claude Code: `/loadcontext`

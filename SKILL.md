@@ -47,6 +47,20 @@ you need such a string exactly, do NOT trust your first read — either:
 The default outdir is `PROJECT_DIR/.claude/snapctx/`. Add it to .gitignore if
 the user commits — it is derived state.
 
+## Docs mode (prose projects)
+
+For projects whose value is documents rather than code (notes, journals,
+research), the code-map serializer misses the content. Use `--docs` to image
+the files themselves, in full:
+
+    python3 ~/.claude/skills/loadcontext/snapctx.py render DIR \
+      --docs 'START-HERE.md,notes/*.md' --out DIR/.claude/snapctx/core \
+      --max-chars 0 --max-frames 16
+
+Separate `--out` subdirectories act as named frame sets (e.g. a small `core`
+set loaded by default, big reference files as their own on-demand sets). Each
+set has its own selftest and sidecars. Same reading rules apply.
+
 ## Updating frames
 
 When the user says "update the frames", "refresh the frames", "regenerate

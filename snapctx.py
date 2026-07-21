@@ -25,9 +25,9 @@ from PIL import Image, ImageDraw, ImageFont
 SKILL_DIR = Path(__file__).resolve().parent
 CELLS = {"6x12": (6, 12), "8x16": (8, 16)}
 FRAME = 1568
-# no confusable glyphs: excludes s/5, u/v/w, o/0, l/1/i, g/q/9-alikes, and all
-# uppercase (case pairs like K/k are themselves confusable at 6x12)
-SELFTEST_ALPHABET = "acdefhkmnrt34679"
+# no confusable glyphs: excludes s/5, u/v/w, o/0, l/1/i, g/q/9-alikes, m/n
+# (stem-count blur at 6x12), and all uppercase (case pairs confuse)
+SELFTEST_ALPHABET = "acdefhkrt34679"
 
 SKIP_DIRS = {".git", "node_modules", "dist", "build", "target", ".venv", "venv",
              "__pycache__", ".next", ".cache", "coverage", "vendor", ".claude"}
@@ -136,6 +136,29 @@ def serialize(root, budget):
     return "\n\n".join(text)
 
 
+def serialize_docs(root, patterns, budget):
+    """Docs mode: image the named files themselves (full text), for prose
+    projects where the code-shaped serializer would miss the content."""
+    root = Path(root).resolve()
+    files = []
+    for pat in patterns:
+        hits = sorted(root.glob(pat.strip()))
+        if not hits:
+            print(f"warning: --docs pattern {pat.strip()!r} matched nothing")
+        files.extend(h for h in hits if h.is_file() and h not in files)
+    sections = [f"# Document frames: {root.name} ({len(files)} files)"]
+    for f in files:
+        try:
+            sections.append(f"#### {f.relative_to(root)}\n"
+                            + f.read_text(errors="replace"))
+        except Exception as e:
+            sections.append(f"#### {f.relative_to(root)} [unreadable: {e}]")
+    text = "\n\n".join(sections)
+    if budget and len(text) > budget:
+        text = text[:budget] + "\n[--max-chars budget reached; content truncated]"
+    return text
+
+
 def pack_text(text):
     out = []
     for ln in text.split("\n"):
@@ -181,7 +204,10 @@ def cmd_render(args):
     root = Path(args.dir).resolve()
     outdir = Path(args.out) if args.out else root / ".claude" / "snapctx"
     outdir.mkdir(parents=True, exist_ok=True)
-    text = serialize(root, args.max_chars)
+    if args.docs:
+        text = serialize_docs(root, args.docs.split(","), args.max_chars)
+    else:
+        text = serialize(root, args.max_chars)
     paths, stream = render_frames(text, outdir, args.font, args.max_frames)
     cw, ch = CELLS[args.font]
     img_tokens = len(paths) * (FRAME * FRAME) // 750
@@ -247,7 +273,11 @@ def main():
     r.add_argument("dir", nargs="?", default=".")
     r.add_argument("--out", default=None)
     r.add_argument("--font", default="6x12", choices=CELLS)
-    r.add_argument("--max-chars", type=int, default=60000)
+    r.add_argument("--docs", default=None,
+                   help="comma-separated globs: image these files in full "
+                        "(prose mode) instead of the code-map serializer")
+    r.add_argument("--max-chars", type=int, default=60000,
+                   help="serializer budget; 0 = unlimited (docs mode)")
     r.add_argument("--max-frames", type=int, default=4)
     r.set_defaults(func=cmd_render)
 
