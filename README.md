@@ -76,8 +76,24 @@ python3 snapctx.py verify CODE --out OUT   # check the SELFTEST reading
 python3 snapctx.py zoom 'REGEX' --out OUT  # 4x crop of matching rows
 ```
 
-`render` options: `--font 6x12|8x16`, `--max-chars N` (default 60000),
-`--max-frames N` (default 4), `--out DIR`.
+`render` options: `--font 6x12|8x16`, `--max-chars N` (default 60000, 0 =
+unlimited), `--max-frames N` (default 4), `--out DIR`, `--docs 'globs'`.
+
+### Docs mode
+
+For prose projects (notes, journals, research archives) the code-map
+serializer misses the content — image the documents themselves:
+
+```sh
+python3 snapctx.py render DIR --docs 'START-HERE.md,notes/*.md' \
+  --out DIR/.claude/snapctx/core --max-chars 0 --max-frames 16
+```
+
+Separate `--out` subdirectories act as named frame sets (a small default-load
+set, big reference files as their own on-demand sets), each with its own
+selftest and sidecars. This is how a 37-million-character personal archive
+becomes loadable: a 200k-token transcript that cannot fit in a context window
+as text is ~24 frames ≈ 79k image tokens.
 
 ## Notes and limits
 

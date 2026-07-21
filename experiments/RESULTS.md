@@ -45,10 +45,13 @@ pairs; a deliberate torture test of the glyph patches.
 5. **Glyph patches work**: with rounded S, pointed V, and open-top 6
    (`tools/patch_glyphs.py`), the confusable-only torture test scored 19/20
    zoomed — matching the unpatched font's score on an easy full-alphabet test.
-6. Incidents from live use, both now designed around: the bitmap font is
-   Latin-1 only (real READMEs aren't), and a selftest alphabet must be
+6. Incidents from live use, all now designed around: the bitmap font is
+   Latin-1 only (real READMEs aren't); a selftest alphabet must be
    single-case (K/k is itself a confusable pair) with no glyph adjacent to
-   `¶` (a terminal P read as M).
+   `¶` (a terminal P read as M); and m/n must not coexist in the alphabet —
+   stem-count blur at 6×12 caused a live m→n misread that survived 4× zoom.
+   Each failure was caught by the verify gate before it could propagate,
+   which is the strongest evidence for shipping one.
 
 ## Token economics
 
