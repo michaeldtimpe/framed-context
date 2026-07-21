@@ -1,6 +1,6 @@
 ---
 name: loadcontext
-description: Load condensed project context as pixel-font PNG images (SnapCompact-style) — ~2.6x more context per token than plain text. Use when the user asks to /loadcontext, "load project context", or wants a cheap full-project overview loaded into the session.
+description: Load condensed project context as pixel-font PNG images (SnapCompact-style) — ~2.6x more context per token than plain text. Use when the user asks to /loadcontext, "load project context", or wants a cheap full-project overview loaded into the session. ALSO use when the user says "update the frames", "refresh/regenerate frames", "re-render the context", or similar — that means re-running the render step for the current project's .claude/snapctx/ frames.
 ---
 
 # loadcontext — dense visual project context
@@ -46,6 +46,20 @@ you need such a string exactly, do NOT trust your first read — either:
 
 The default outdir is `PROJECT_DIR/.claude/snapctx/`. Add it to .gitignore if
 the user commits — it is derived state.
+
+## Updating frames
+
+When the user says "update the frames", "refresh the frames", "regenerate
+context", or similar, they mean re-running step 1 for the current project so
+`.claude/snapctx/` reflects the repo as it is now:
+
+    python3 ~/.claude/skills/loadcontext/snapctx.py render [PROJECT_DIR]
+
+Report the new stats line. Only Read the regenerated frames if the user also
+wants the context loaded into this session (e.g. they say "update and load");
+a bare update is just the render. If the project has no `.claude/snapctx/`
+yet, this is a first-time setup — same command, and mention adding
+`.claude/snapctx/` to .gitignore.
 
 ## Notes
 
