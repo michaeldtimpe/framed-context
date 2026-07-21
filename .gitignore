@@ -1,0 +1,16 @@
+# experiment artifacts (regenerable via experiments/)
+*.png
+context-*.txt
+context.txt
+packed.txt
+answers*.json
+questions*.json
+my_answers*.json
+selftest.json
+
+# original spleen distribution (downloaded by tools/mkfont.py workflow)
+fonts/spleen-2.1.0/
+fonts/spleen.tar.gz
+
+.claude/
+__pycache__/

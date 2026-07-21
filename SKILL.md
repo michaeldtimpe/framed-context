@@ -1,0 +1,53 @@
+---
+name: loadcontext
+description: Load condensed project context as pixel-font PNG images (SnapCompact-style) — ~2.6x more context per token than plain text. Use when the user asks to /loadcontext, "load project context", or wants a cheap full-project overview loaded into the session.
+---
+
+# loadcontext — dense visual project context
+
+Renders a condensed snapshot of a project (file tree, docs, configs, code
+signatures, git log) into 1568x1568 pixel-font PNGs and loads them as vision
+input. A full frame carries ~34,000 chars (~8.5k text-tokens' worth) for
+~3,279 image tokens.
+
+## Steps
+
+1. Run the renderer against the target project (defaults to cwd):
+
+   python3 ~/.claude/skills/loadcontext/snapctx.py render [PROJECT_DIR]
+
+   It prints one `FRAME: <path>` line per PNG plus token stats.
+
+2. Read every FRAME path with the Read tool. The frames are packed text in a
+   6x12 pixel font; `¶` glyphs mark line breaks in the original text.
+
+3. Self-test: the stream begins with `SELFTEST:<8 chars>`. Verify your reading:
+
+   python3 ~/.claude/skills/loadcontext/snapctx.py verify <code-you-read> --out <outdir>
+
+   On FAIL, warn the user that the image pipeline degraded the frames (likely
+   a non-high-res model tier) and fall back to normal file reading.
+
+4. Tell the user what was loaded: sections, char count, and the token cost
+   printed by the renderer. Then proceed with the session normally, using the
+   imaged context as your project map.
+
+## Retrieving exact strings later
+
+Pixel text is near-perfect for prose, code, and numbers, but random-looking
+strings (hashes, tokens) can confuse glyph pairs (S/5, U/V, l/1, O/0). When
+you need such a string exactly, do NOT trust your first read — either:
+
+- grep the sidecar: `<outdir>/context.txt` holds the identical text, or
+- zoom: `python3 ~/.claude/skills/loadcontext/snapctx.py zoom '<regex>' --out <outdir>`
+  writes a 4x-magnified crop (`ZOOM: <path>`) — Read it.
+
+The default outdir is `PROJECT_DIR/.claude/snapctx/`. Add it to .gitignore if
+the user commits — it is derived state.
+
+## Notes
+
+- Requires Pillow (`python3 -c "import PIL"`); if missing, `pip install pillow`.
+- Editing files still means Reading the real file first — the frames are a
+  map, not an editing source.
+- `--max-chars` (default 60000) and `--max-frames` (default 4) bound cost.
