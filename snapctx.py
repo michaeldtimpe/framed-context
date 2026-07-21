@@ -185,9 +185,13 @@ def cmd_render(args):
     paths, stream = render_frames(text, outdir, args.font, args.max_frames)
     cw, ch = CELLS[args.font]
     img_tokens = len(paths) * (FRAME * FRAME) // 750
+    text_tokens = len(text) // 4
     print(f"serialized {len(text)} chars -> packed {len(stream)} chars "
           f"-> {len(paths)} frame(s), ~{img_tokens} image tokens "
-          f"(vs ~{len(text) // 4} as text)")
+          f"(vs ~{text_tokens} as text)")
+    if text_tokens < img_tokens:
+        print(f"SMALL_PROJECT: plain text is cheaper here — skip the frames "
+              f"and Read {outdir}/context.txt instead")
     for p in paths:
         print(f"FRAME: {p}")
     print(f"sidecars: {outdir}/context.txt (grep for exact strings), selftest.json")

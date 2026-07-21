@@ -16,7 +16,9 @@ input. A full frame carries ~34,000 chars (~8.5k text-tokens' worth) for
 
    python3 ~/.claude/skills/loadcontext/snapctx.py render [PROJECT_DIR]
 
-   It prints one `FRAME: <path>` line per PNG plus token stats.
+   It prints one `FRAME: <path>` line per PNG plus token stats. If it prints
+   a `SMALL_PROJECT:` line instead, the project is cheaper as plain text —
+   Read the indicated `context.txt` and skip the frames and selftest.
 
 2. Read every FRAME path with the Read tool. The frames are packed text in a
    6x12 pixel font; `¶` glyphs mark line breaks in the original text.
