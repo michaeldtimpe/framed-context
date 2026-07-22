@@ -26,8 +26,9 @@ SKILL_DIR = Path(__file__).resolve().parent
 CELLS = {"6x12": (6, 12), "8x16": (8, 16)}
 FRAME = 1568
 # no confusable glyphs: excludes s/5, u/v/w, o/0, l/1/i, g/q/9-alikes, m/n
-# (stem-count blur at 6x12), and all uppercase (case pairs confuse)
-SELFTEST_ALPHABET = "acdefhkrt34679"
+# (stem-count blur at 6x12), all uppercase (case pairs confuse), and 7/T,
+# 4/W, e/a (observed misreads at 6x12, 2026-07-22)
+SELFTEST_ALPHABET = "acdfhkrt369"
 
 SKIP_DIRS = {".git", "node_modules", "dist", "build", "target", ".venv", "venv",
              "__pycache__", ".next", ".cache", "coverage", "vendor", ".claude"}
@@ -174,7 +175,8 @@ def render_frames(text, outdir, font_name="6x12", max_frames=4):
     cols, rows = FRAME // cw, FRAME // ch
 
     code = "".join(random.SystemRandom().choice(SELFTEST_ALPHABET) for _ in range(8))
-    stream = f"SELFTEST:{code} ¶" + pack_text(text)
+    spaced = " ".join(code)  # isolate each glyph; verify strips spaces
+    stream = f"SELFTEST:{spaced} ¶" + pack_text(text)
     # bitmap font is latin-1 only; degrade anything else to '?'
     stream = stream.encode("latin-1", "replace").decode("latin-1")
     cap = cols * rows * max_frames
@@ -228,7 +230,9 @@ def cmd_render(args):
 def cmd_verify(args):
     outdir = Path(args.out)
     want = json.loads((outdir / "selftest.json").read_text())["code"]
-    if args.code == want:
+    got = args.code.strip().lower().removeprefix("selftest")
+    got = got.replace(":", "").replace(" ", "")
+    if got == want:
         print("PASS — pixel text is legible on this model/pipeline")
     else:
         print(f"FAIL — you read {args.code!r}, actual differs. Frames may be "

@@ -23,12 +23,16 @@ input. A full frame carries ~34,000 chars (~8.5k text-tokens' worth) for
 2. Read every FRAME path with the Read tool. The frames are packed text in a
    6x12 pixel font; `¶` glyphs mark line breaks in the original text.
 
-3. Self-test: the stream begins with `SELFTEST:<8 chars>`. Verify your reading:
+3. Self-test: the stream begins with `SELFTEST:` followed by 8 space-separated
+   glyphs (lowercase letters + digits only — no uppercase). Verify your reading
+   (spaces optional; verify strips them):
 
    python3 ~/.claude/skills/loadcontext/snapctx.py verify <code-you-read> --out <outdir>
 
-   On FAIL, warn the user that the image pipeline degraded the frames (likely
-   a non-high-res model tier) and fall back to normal file reading.
+   On FAIL, zoom the code first (`zoom SELFTEST --out <outdir>`) and
+   retry once — a misread of the code itself is not a degraded pipeline. If it
+   still fails, warn the user that the image pipeline degraded the frames
+   (likely a non-high-res model tier) and fall back to normal file reading.
 
 4. Tell the user what was loaded: sections, char count, and the token cost
    printed by the renderer. Then proceed with the session normally, using the

@@ -25,7 +25,8 @@ The model reads the frames as vision input and uses them as its project map.
 Safety rails, each one earned by a measured failure:
 
 - **`SELFTEST:` line** — every render embeds a random code from a
-  glyph-unambiguous alphabet; `snapctx.py verify` confirms the model actually
+  glyph-unambiguous alphabet (space-separated so each glyph stands alone;
+  verify strips the spaces); `snapctx.py verify` confirms the model actually
   read it correctly before the session trusts the frames.
 - **`zoom` escape hatch** — random-looking strings (hashes, tokens) confuse
   even patched glyphs on a first read; `snapctx.py zoom '<regex>'` writes a
