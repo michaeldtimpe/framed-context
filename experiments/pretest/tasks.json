@@ -1,0 +1,64 @@
+[
+  {
+    "id": "fc-q1",
+    "repo": "../..",
+    "prompt": "Which Python file in this repo implements the SELFTEST verification, and which CLI subcommand runs that check? Answer in one sentence naming the file and the subcommand.",
+    "check": {"type": "regex", "pattern": "snapctx\\.py[\\s\\S]*verify|verify[\\s\\S]*snapctx\\.py"}
+  },
+  {
+    "id": "click-completion",
+    "repo": "https://github.com/pallets/click",
+    "ref": "00e592cea702e0b2caa0dee42489fdb1c22cd845",
+    "prompt": "In this checkout: which file defines the base class for shell tab-completion support, what is the class named, and on exactly which line number does its class statement appear? Answer with file path, class name, and line number.",
+    "check": {"type": "regex", "pattern": "(?=[\\s\\S]*ShellComplete)(?=[\\s\\S]*shell_completion)(?=[\\s\\S]*\\b278\\b)"}
+  },
+  {
+    "id": "click-envvar",
+    "repo": "https://github.com/pallets/click",
+    "ref": "00e592cea702e0b2caa0dee42489fdb1c22cd845",
+    "prompt": "In this checkout: the base Parameter class has a method that resolves a parameter's value from its environment variable. Name the method, the file it lives in, and the exact line number of the base Parameter class's def statement for it (not any subclass override).",
+    "check": {"type": "regex", "pattern": "(?=[\\s\\S]*resolve_envvar_value)(?=[\\s\\S]*core\\.py)(?=[\\s\\S]*\\b2662\\b)"}
+  },
+  {
+    "id": "click-pager",
+    "repo": "https://github.com/pallets/click",
+    "ref": "00e592cea702e0b2caa0dee42489fdb1c22cd845",
+    "prompt": "In this checkout: click.echo_via_pager delegates the actual paging work to a function in a private module. Name that function, its module file, and the exact line number of its def statement.",
+    "check": {"type": "regex", "pattern": "(?=[\\s\\S]*get_pager_file)(?=[\\s\\S]*_termui_impl)(?=[\\s\\S]*\\b432\\b)"}
+  },
+  {
+    "id": "requests-ua",
+    "repo": "https://github.com/psf/requests",
+    "ref": "414f0513c33883adf6f2b46901d4f0b38a455851",
+    "prompt": "In this checkout: which function builds the default User-Agent string, in which file, and on exactly which line number is its def statement? Answer with function name, file path, and line number.",
+    "check": {"type": "regex", "pattern": "(?=[\\s\\S]*default_user_agent)(?=[\\s\\S]*utils\\.py)(?=[\\s\\S]*\\b942\\b)"}
+  },
+  {
+    "id": "requests-redirects",
+    "repo": "https://github.com/psf/requests",
+    "ref": "414f0513c33883adf6f2b46901d4f0b38a455851",
+    "prompt": "In this checkout: which method implements redirect resolution (following a chain of redirects), in which file, and on exactly which line number is its def statement?",
+    "check": {"type": "regex", "pattern": "(?=[\\s\\S]*resolve_redirects)(?=[\\s\\S]*sessions\\.py)(?=[\\s\\S]*\\b186\\b)"}
+  },
+  {
+    "id": "requests-hooks",
+    "repo": "https://github.com/psf/requests",
+    "ref": "414f0513c33883adf6f2b46901d4f0b38a455851",
+    "prompt": "In this checkout: which function dispatches event hooks, in which file, and on exactly which line number is its def statement?",
+    "check": {"type": "regex", "pattern": "(?=[\\s\\S]*dispatch_hook)(?=[\\s\\S]*hooks\\.py)(?=[\\s\\S]*\\b32\\b)"}
+  },
+  {
+    "id": "httpx-transport",
+    "repo": "https://github.com/encode/httpx",
+    "ref": "b5addb64f0161ff6bfe94c124ef76f6a1fba5254",
+    "prompt": "In this checkout: which class is the default synchronous HTTP transport, in which file, and on exactly which line number is its class statement?",
+    "check": {"type": "regex", "pattern": "(?=[\\s\\S]*HTTPTransport)(?=[\\s\\S]*default\\.py)(?=[\\s\\S]*\\b135\\b)"}
+  },
+  {
+    "id": "httpx-timeout",
+    "repo": "https://github.com/encode/httpx",
+    "ref": "b5addb64f0161ff6bfe94c124ef76f6a1fba5254",
+    "prompt": "In this checkout: which file defines the Timeout configuration class (not the timeout exceptions), and on exactly which line number is its class statement?",
+    "check": {"type": "regex", "pattern": "(?=[\\s\\S]*Timeout)(?=[\\s\\S]*_config\\.py)(?=[\\s\\S]*\\b72\\b)"}
+  }
+]
