@@ -25,6 +25,12 @@ ssh "$HOST" "cd $DEST && git init -q 2>/dev/null; \
   git -c user.email=pretest@local -c user.name=pretest commit -qm snapshot -q 2>/dev/null; \
   git ls-files | grep -x '.env' && echo 'FATAL: .env is tracked in snapshot' && exit 1 || true"
 
+# Generate the deterministic docs-mode corpus and make it a clonable git repo.
+ssh "$HOST" "cd $DEST/experiments/pretest && python3 gen_corpus.py >/dev/null && \
+  cd corpus && git init -q 2>/dev/null; git add -A . && \
+  git -c user.email=pretest@local -c user.name=pretest commit -qm corpus 2>/dev/null; \
+  echo 'corpus repo ready:' \$(git rev-parse --short HEAD)"
+
 cat <<EOF
 
 Staged. On the M5:

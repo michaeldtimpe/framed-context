@@ -1,0 +1,77 @@
+[
+  {
+    "id": "al-s1",
+    "repo": "https://github.com/mauhpr/agentlint",
+    "ref": "f32cc2ca38e1275879932578b30768a3cb401557",
+    "prompt": "In this checkout: which class enumerates the possible states of the circuit-breaker mechanism? Give the file path, the class name, and the exact line number of its class statement.",
+    "check": {"type": "regex", "pattern": "(?=[\\s\\S]*CircuitBreakerState)(?=[\\s\\S]*circuit_breaker\\.py)(?=[\\s\\S]*\\b42\\b)"}
+  },
+  {
+    "id": "al-s2",
+    "repo": "https://github.com/mauhpr/agentlint",
+    "ref": "f32cc2ca38e1275879932578b30768a3cb401557",
+    "prompt": "In this checkout: which class formats lint output for Claude hooks? Give the file path, the class name, and the exact line number of its class statement.",
+    "check": {"type": "regex", "pattern": "(?=[\\s\\S]*ClaudeHookFormatter)(?=[\\s\\S]*claude_hooks\\.py)(?=[\\s\\S]*\\b10\\b)"}
+  },
+  {
+    "id": "al-batch6",
+    "repo": "https://github.com/mauhpr/agentlint",
+    "ref": "f32cc2ca38e1275879932578b30768a3cb401557",
+    "prompt": "Answer all six questions about this checkout. For each, give the file path, the symbol name, and the exact line number of its def/class statement. Number your answers.\n1. Which class enumerates the possible states of the circuit-breaker mechanism?\n2. Which function detects which technology stack a project uses?\n3. Which class is the rule-evaluation engine?\n4. Which class formats lint output for Claude hooks?\n5. Which function returns the agentchute queue's root directory?\n6. Which class is responsible for reporting results?",
+    "check": {"type": "regex", "pattern": "(?=[\\s\\S]*CircuitBreakerState)(?=[\\s\\S]*\\b42\\b)(?=[\\s\\S]*detect_stack)(?=[\\s\\S]*\\b18\\b)(?=[\\s\\S]*\\bEngine\\b)(?=[\\s\\S]*\\b27\\b)(?=[\\s\\S]*ClaudeHookFormatter)(?=[\\s\\S]*\\b10\\b)(?=[\\s\\S]*_queue_root)(?=[\\s\\S]*\\b29\\b)(?=[\\s\\S]*\\bReporter\\b)(?=[\\s\\S]*\\b11\\b)"}
+  },
+  {
+    "id": "ag-s1",
+    "repo": "https://github.com/PluralisResearch/agora",
+    "ref": "37d29a966528675635161007d7b43388012a98b2",
+    "prompt": "In this checkout: which pydantic model describes per-sample FLOP counts? Give the file path, the class name, and the exact line number of its class statement.",
+    "check": {"type": "regex", "pattern": "(?=[\\s\\S]*NumFlopPerSample)(?=[\\s\\S]*flops\\.py)(?=[\\s\\S]*\\b89\\b)"}
+  },
+  {
+    "id": "ag-s2",
+    "repo": "https://github.com/PluralisResearch/agora",
+    "ref": "37d29a966528675635161007d7b43388012a98b2",
+    "prompt": "In this checkout: which class handles downloading training state? Give the file path, the class name, and the exact line number of its class statement.",
+    "check": {"type": "regex", "pattern": "(?=[\\s\\S]*StateDownloader)(?=[\\s\\S]*state_loader\\.py)(?=[\\s\\S]*\\b41\\b)"}
+  },
+  {
+    "id": "ag-batch6",
+    "repo": "https://github.com/PluralisResearch/agora",
+    "ref": "37d29a966528675635161007d7b43388012a98b2",
+    "prompt": "Answer all six questions about this checkout. For each, give the file path, the symbol name, and the exact line number of its def/class statement. Number your answers.\n1. Which class tracks GPU utilization in a background thread?\n2. Which class builds security validators?\n3. Which pydantic model describes per-sample FLOP counts?\n4. Which function returns a cosine learning-rate schedule with warmup?\n5. Which class handles downloading training state?\n6. Which helper function normalizes a GPU device name?",
+    "check": {"type": "regex", "pattern": "(?=[\\s\\S]*GpuUtilizationTracker)(?=[\\s\\S]*\\b28\\b)(?=[\\s\\S]*ValidatorBuilder)(?=[\\s\\S]*\\b23\\b)(?=[\\s\\S]*NumFlopPerSample)(?=[\\s\\S]*\\b89\\b)(?=[\\s\\S]*get_cosine_schedule_with_warmup)(?=[\\s\\S]*\\b18\\b)(?=[\\s\\S]*StateDownloader)(?=[\\s\\S]*\\b41\\b)(?=[\\s\\S]*_normalize_gpu_name)(?=[\\s\\S]*\\b77\\b)"}
+  },
+  {
+    "id": "docs-overrun",
+    "repo": "corpus",
+    "render_args": ["--docs", "notes/*.md", "--max-chars", "0", "--max-frames", "16"],
+    "prompt": "This repository holds 40 station operations notes in notes/ (note-001.md .. note-040.md). Identify every note that reports spending exceeding its allocation (a financial overrun), regardless of how it is worded. Be exhaustive and exclude notes that merely mention finances without an overrun. End your reply with exactly one line of the form:\nANSWER: note-xxx, note-yyy, ...",
+    "check": {"type": "command", "cmd": "python3 \"$PRETEST_DIR/check_docs.py\" overrun"},
+    "prefix_override": {
+      "text": "First, read .claude/snapctx/context.txt — it contains the full text of every note. Answer from it; the original files are also on disk. Then complete this task:\n\n",
+      "frames": "First, load the corpus: use the Read tool on each PNG frame in .claude/snapctx/ — pixel-font renderings containing the full text of every note. The identical text exists in .claude/snapctx/context.txt for exact lookups. Then complete this task:\n\n"
+    }
+  },
+  {
+    "id": "docs-corrosion",
+    "repo": "corpus",
+    "render_args": ["--docs", "notes/*.md", "--max-chars", "0", "--max-frames", "16"],
+    "prompt": "This repository holds 40 station operations notes in notes/ (note-001.md .. note-040.md). Identify every note that reports an equipment failure caused by corrosion, regardless of how it is worded. Be exhaustive and exclude failures with other causes. End your reply with exactly one line of the form:\nANSWER: note-xxx, note-yyy, ...",
+    "check": {"type": "command", "cmd": "python3 \"$PRETEST_DIR/check_docs.py\" corrosion"},
+    "prefix_override": {
+      "text": "First, read .claude/snapctx/context.txt — it contains the full text of every note. Answer from it; the original files are also on disk. Then complete this task:\n\n",
+      "frames": "First, load the corpus: use the Read tool on each PNG frame in .claude/snapctx/ — pixel-font renderings containing the full text of every note. The identical text exists in .claude/snapctx/context.txt for exact lookups. Then complete this task:\n\n"
+    }
+  },
+  {
+    "id": "docs-batch2",
+    "repo": "corpus",
+    "render_args": ["--docs", "notes/*.md", "--max-chars", "0", "--max-frames", "16"],
+    "prompt": "This repository holds 40 station operations notes in notes/ (note-001.md .. note-040.md). Two exhaustive identification questions:\n1. Which notes report spending exceeding its allocation (a financial overrun), however worded?\n2. Which notes report an equipment failure caused by corrosion, however worded?\nExclude near-misses (finances without an overrun; failures with other causes). End your reply with exactly two lines:\nANSWER-OVERRUN: note-xxx, ...\nANSWER-CORROSION: note-xxx, ...",
+    "check": {"type": "command", "cmd": "python3 \"$PRETEST_DIR/check_docs.py\" overrun && python3 \"$PRETEST_DIR/check_docs.py\" corrosion"},
+    "prefix_override": {
+      "text": "First, read .claude/snapctx/context.txt — it contains the full text of every note. Answer from it; the original files are also on disk. Then complete this task:\n\n",
+      "frames": "First, load the corpus: use the Read tool on each PNG frame in .claude/snapctx/ — pixel-font renderings containing the full text of every note. The identical text exists in .claude/snapctx/context.txt for exact lookups. Then complete this task:\n\n"
+    }
+  }
+]

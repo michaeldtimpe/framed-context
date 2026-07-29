@@ -90,8 +90,9 @@ def prepare_workspace(task, arm, run_dir, mirrors, snapctx):
             raise RuntimeError(f"checkout {task['ref']} failed: {r.stderr[-500:]}")
 
     if arm in ("text", "frames"):
-        r = sh([sys.executable, str(snapctx), "render", str(workspace)],
-               timeout=300)
+        cmd = [sys.executable, str(snapctx), "render", str(workspace)]
+        cmd += task.get("render_args", [])
+        r = sh(cmd, timeout=300)
         if r.returncode != 0:
             raise RuntimeError(f"snapctx render failed: {r.stderr[-800:]}")
         snapdir = workspace / ".claude/snapctx"
@@ -140,16 +141,20 @@ def run_claude(prompt, workspace, cfg_dir, model, max_turns, timeout_s):
 
 
 def score(task, workspace, result_text):
+    """Returns (passed, detail) — detail is recorded so a scoring failure is
+    always diagnosable from results.jsonl alone."""
     check = task["check"]
     if check["type"] == "regex":
-        return bool(re.search(check["pattern"], result_text or "",
-                              re.IGNORECASE | re.DOTALL))
+        passed = bool(re.search(check["pattern"], result_text or "",
+                                re.IGNORECASE | re.DOTALL))
+        return passed, "regex"
     if check["type"] == "command":
         rf = workspace / ".pretest_result.txt"
         rf.write_text(result_text or "")
-        env = dict(os.environ, RESULT_FILE=str(rf))
+        env = dict(os.environ, RESULT_FILE=str(rf), PRETEST_DIR=str(HERE))
         r = sh(["bash", "-c", check["cmd"]], cwd=workspace, env=env, timeout=600)
-        return r.returncode == 0
+        detail = (r.stdout + r.stderr).strip()[-300:]
+        return r.returncode == 0, f"rc={r.returncode} {detail}"
     raise ValueError(f"unknown check type {check['type']}")
 
 
@@ -176,7 +181,7 @@ def main():
         keep = set(args.only.split(","))
         tasks = [t for t in tasks if t["id"] in keep]
     arms = args.arms.split(",")
-    workdir = Path(args.workdir)
+    workdir = Path(args.workdir).resolve()
     (workdir / "runs").mkdir(parents=True, exist_ok=True)
     mirrors = workdir / "mirrors"
     mirrors.mkdir(exist_ok=True)
@@ -216,6 +221,7 @@ def main():
             workspace = prepare_workspace(task, arm, run_dir, mirrors, snapctx)
             prefix = {"baseline": "", "text": TEXT_PREFIX,
                       "frames": FRAMES_PREFIX}[arm]
+            prefix = task.get("prefix_override", {}).get(arm, prefix)
             out, wall, err = run_claude(prefix + task["prompt"], workspace,
                                         cfg_dir, args.model, args.max_turns,
                                         args.timeout)
@@ -248,8 +254,10 @@ def main():
                     cache_read_tokens=usage.get("cache_read_input_tokens"),
                     cache_write_tokens=usage.get("cache_creation_input_tokens"),
                     is_error=out.get("is_error", False),
-                    success=score(task, workspace, out.get("result", "")),
                 )
+                passed, detail = score(task, workspace, out.get("result", ""))
+                rec["success"] = passed
+                rec["check_detail"] = detail
         except Exception as e:  # keep the matrix running; record the failure
             rec.update(ok=False, error=f"{type(e).__name__}: {e}")
         finally:
