@@ -76,7 +76,7 @@ arm) or pay for retrieval-grounded reading.
    archive niche the frames were built for. The ~2.6x input-token density is
    real and irrelevant — output tokens (5x price) and turn count dominate,
    and pixel-reading inflates both.
-2. **The serializer is the product.** `snapctx render`'s compact text
+2. **The serializer is the product.** `snap_serializer render`'s compact text
    preloaded into sessions: -42% on multi-question sessions in unfamiliar
    repos, -68% per archive question at 160-note scale, at parity accuracy
    (with the multi-concept scope note above).

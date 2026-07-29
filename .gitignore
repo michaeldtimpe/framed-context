@@ -14,3 +14,5 @@ fonts/spleen.tar.gz
 
 .claude/
 __pycache__/
+experiments/legacy-frames/fonts/spleen-2.1.0/
+experiments/legacy-frames/fonts/spleen.tar.gz

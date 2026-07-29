@@ -1,30 +1,30 @@
 ---
 name: loadcontext
-description: Load condensed project context — a serialized text map of the repo (file tree, docs, signatures, git log) preloaded at session start. Measured to cut multi-question session cost ~42% on unfamiliar repos and ~68% per question on large doc archives. Use when the user asks to /loadcontext, "load project context", or wants a full-project overview loaded into the session. ALSO use when the user says "update the frames", "refresh/regenerate the context", "re-render the context", or similar — that means re-running the render step for the current project's .claude/snapctx/.
+description: Load condensed project context — a serialized text map of the repo (file tree, docs, signatures, git log) preloaded at session start. Measured to cut multi-question session cost ~42% on unfamiliar repos and ~68% per question on large doc archives. Use when the user asks to /loadcontext, "load project context", or wants a full-project overview loaded into the session. ALSO use when the user says "update the frames", "refresh/regenerate the context", "re-render the context", or similar — that means re-running the render step for the current project's .claude/snap-serializer/.
 ---
 
 # loadcontext — condensed project context (text serializer)
 
 Serializes a condensed snapshot of a project (file tree, docs, configs, code
-signatures, git log) into `.claude/snapctx/context.txt` and loads it as the
+signatures, git log) into `.claude/snap-serializer/context.txt` and loads it as the
 session's project map. One Read call; the map pays for itself as soon as the
 session consults it twice.
 
 (Historical note: this skill previously rendered pixel-font PNG frames.
 Paired testing showed the frames cost more end-to-end than the same content
 as text in every regime and lose recall silently on archives — see
-experiments/pretest/RESULTS.md in the framed-context repo. Text is now the
-only load path; `--frames` remains in the CLI for reproducibility.)
+experiments/pretest/RESULTS.md. The serializer is now the whole tool; the
+retired frame renderer lives in experiments/legacy-frames/ for reproducibility.)
 
 ## Steps
 
 1. Run the renderer against the target project (defaults to cwd):
 
-   python3 ~/.claude/skills/loadcontext/snapctx.py render [PROJECT_DIR]
+   python3 ~/.claude/skills/loadcontext/snap_serializer.py render [PROJECT_DIR]
 
    It prints the serialized size and the `context.txt` path.
 
-2. Read `.claude/snapctx/context.txt` with the Read tool (in chunks if it is
+2. Read `.claude/snap-serializer/context.txt` with the Read tool (in chunks if it is
    large). Use it as your project map for the session.
 
 3. Tell the user what was loaded: sections, char count, approximate token
@@ -48,8 +48,8 @@ rather than trusting the map's rendering of them.
 For projects whose value is documents rather than code (notes, journals,
 research), serialize the files themselves, in full:
 
-    python3 ~/.claude/skills/loadcontext/snapctx.py render DIR \
-      --docs 'START-HERE.md,notes/*.md' --out DIR/.claude/snapctx/core \
+    python3 ~/.claude/skills/loadcontext/snap_serializer.py render DIR \
+      --docs 'START-HERE.md,notes/*.md' --out DIR/.claude/snap-serializer/core \
       --max-chars 0
 
 Separate `--out` subdirectories act as named context sets (a small `core`
@@ -64,16 +64,15 @@ reading stays exact. Cost still favors the preload ~3x per question.
 
 When the user says "update the frames", "refresh the context", "regenerate
 context", or similar, they mean re-running step 1 for the current project so
-`.claude/snapctx/` reflects the repo as it is now. Report the new stats
+`.claude/snap-serializer/` reflects the repo as it is now. Report the new stats
 line. Only Read the regenerated context if the user also wants it loaded
 into this session; a bare update is just the render. First-time setup is the
-same command — mention adding `.claude/snapctx/` to .gitignore (derived
+same command — mention adding `.claude/snap-serializer/` to .gitignore (derived
 state).
 
 ## Notes
 
-- Pillow is only needed for the legacy `--frames` path; the text path has no
-  dependencies beyond Python 3.
+- No dependencies beyond Python 3.
 - The map is for orientation — editing files still means Reading the real
   file first.
 - `--max-chars` (default 60000, 0 = unlimited) bounds cost.
