@@ -210,6 +210,12 @@ def cmd_render(args):
         text = serialize_docs(root, args.docs.split(","), args.max_chars)
     else:
         text = serialize(root, args.max_chars)
+    if not args.frames:
+        (outdir / "context.txt").write_text(text)
+        print(f"serialized {len(text)} chars -> {outdir}/context.txt "
+              f"(~{len(text) // 4} tokens as text)")
+        print(f"LOAD: Read {outdir}/context.txt at session start")
+        return
     paths, stream = render_frames(text, outdir, args.font, args.max_frames)
     cw, ch = CELLS[args.font]
     img_tokens = len(paths) * (FRAME * FRAME) // 750
@@ -283,6 +289,10 @@ def main():
     r.add_argument("--max-chars", type=int, default=60000,
                    help="serializer budget; 0 = unlimited (docs mode)")
     r.add_argument("--max-frames", type=int, default=4)
+    r.add_argument("--frames", action="store_true",
+                   help="also render pixel-font PNG frames (measured to cost "
+                        "more end-to-end than the text — see experiments/"
+                        "pretest/RESULTS.md; kept for reproducibility)")
     r.set_defaults(func=cmd_render)
 
     v = sub.add_parser("verify")

@@ -1,0 +1,35 @@
+[
+  {
+    "id": "d3-overrun",
+    "repo": "corpus3",
+    "render_args": ["--docs", "notes/*.md", "--max-chars", "0", "--max-frames", "32"],
+    "prompt": "This repository is an archive of 160 station operations notes in notes/ (note-001.md .. note-160.md). Identify every note that reports spending exceeding its allocation (a financial overrun), regardless of how it is worded. Be exhaustive — a missed note is a failure — and exclude notes that merely mention finances without an overrun. End your reply with exactly one line of the form:\nANSWER: note-xxx, note-yyy, ...",
+    "check": {"type": "command", "cmd": "python3 \"$PRETEST_DIR/check_docs.py\" overrun3"},
+    "prefix_override": {
+      "text": "First, read .claude/snapctx/context.txt — it contains the full text of every note (it is large; keep reading in chunks until you have seen all of it). Then complete this task:\n\n",
+      "frames": "First, load the archive: use the Read tool on every PNG frame in .claude/snapctx/ (23 frames, pixel-font renderings containing the full text of every note). The identical text exists in .claude/snapctx/context.txt for exact lookups. Then complete this task:\n\n"
+    }
+  },
+  {
+    "id": "d3-wildlife",
+    "repo": "corpus3",
+    "render_args": ["--docs", "notes/*.md", "--max-chars", "0", "--max-frames", "32"],
+    "prompt": "This repository is an archive of 160 station operations notes in notes/ (note-001.md .. note-160.md). Identify every note that reports wildlife damaging or disrupting station equipment or operations, regardless of how it is worded. Be exhaustive — a missed note is a failure — and exclude notes that mention animals without damage or disruption. End your reply with exactly one line of the form:\nANSWER: note-xxx, note-yyy, ...",
+    "check": {"type": "command", "cmd": "python3 \"$PRETEST_DIR/check_docs.py\" wildlife3"},
+    "prefix_override": {
+      "text": "First, read .claude/snapctx/context.txt — it contains the full text of every note (it is large; keep reading in chunks until you have seen all of it). Then complete this task:\n\n",
+      "frames": "First, load the archive: use the Read tool on every PNG frame in .claude/snapctx/ (23 frames, pixel-font renderings containing the full text of every note). The identical text exists in .claude/snapctx/context.txt for exact lookups. Then complete this task:\n\n"
+    }
+  },
+  {
+    "id": "d3-batch3",
+    "repo": "corpus3",
+    "render_args": ["--docs", "notes/*.md", "--max-chars", "0", "--max-frames", "32"],
+    "prompt": "This repository is an archive of 160 station operations notes in notes/ (note-001.md .. note-160.md). Three exhaustive identification questions:\n1. Which notes report spending exceeding its allocation (a financial overrun), however worded?\n2. Which notes report an equipment failure caused by corrosion, however worded?\n3. Which notes report wildlife damaging or disrupting equipment or operations, however worded?\nBe exhaustive — a missed note is a failure — and exclude near-misses. End your reply with exactly three lines:\nANSWER-OVERRUN: note-xxx, ...\nANSWER-CORROSION: note-xxx, ...\nANSWER-WILDLIFE: note-xxx, ...",
+    "check": {"type": "command", "cmd": "python3 \"$PRETEST_DIR/check_docs.py\" overrun3 && python3 \"$PRETEST_DIR/check_docs.py\" corrosion3 && python3 \"$PRETEST_DIR/check_docs.py\" wildlife3"},
+    "prefix_override": {
+      "text": "First, read .claude/snapctx/context.txt — it contains the full text of every note (it is large; keep reading in chunks until you have seen all of it). Then complete this task:\n\n",
+      "frames": "First, load the archive: use the Read tool on every PNG frame in .claude/snapctx/ (23 frames, pixel-font renderings containing the full text of every note). The identical text exists in .claude/snapctx/context.txt for exact lookups. Then complete this task:\n\n"
+    }
+  }
+]

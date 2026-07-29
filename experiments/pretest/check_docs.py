@@ -15,13 +15,18 @@ GROUND_TRUTH = {
     # baked from gen_corpus.py output (deterministic seed)
     "overrun": set("note-007,note-010,note-029,note-030,note-031,note-039,note-040".split(",")),
     "corrosion": set("note-008,note-013,note-022,note-024,note-025".split(",")),
+    # baked from gen_corpus3.py output (round 3, 160-note archive)
+    "overrun3": set("note-008,note-030,note-053,note-054,note-072,note-099,note-129".split(",")),
+    "corrosion3": set("note-015,note-041,note-063,note-064,note-078".split(",")),
+    "wildlife3": set("note-007,note-034,note-060,note-095,note-143,note-146".split(",")),
 }
 
 def main():
     concept = sys.argv[1]
     text = open(os.environ["RESULT_FILE"]).read()
     lines = [l for l in text.splitlines() if re.match(r"^\s*ANSWER[^:]*:", l, re.I)]
-    labeled = [l for l in lines if concept.lower() in l.lower()]
+    base = re.sub(r"\d+$", "", concept.lower())  # overrun3 -> overrun
+    labeled = [l for l in lines if base in l.lower()]
     bare = [l for l in lines if re.match(r"^\s*ANSWER\s*:", l, re.I)]
     pick = (labeled or bare)
     if not pick:

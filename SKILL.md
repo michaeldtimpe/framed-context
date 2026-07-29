@@ -1,14 +1,20 @@
 ---
 name: loadcontext
-description: Load condensed project context as pixel-font PNG images (SnapCompact-style) — ~2.6x more context per token than plain text. Use when the user asks to /loadcontext, "load project context", or wants a cheap full-project overview loaded into the session. ALSO use when the user says "update the frames", "refresh/regenerate frames", "re-render the context", or similar — that means re-running the render step for the current project's .claude/snapctx/ frames.
+description: Load condensed project context — a serialized text map of the repo (file tree, docs, signatures, git log) preloaded at session start. Measured to cut multi-question session cost ~42% on unfamiliar repos and ~68% per question on large doc archives. Use when the user asks to /loadcontext, "load project context", or wants a full-project overview loaded into the session. ALSO use when the user says "update the frames", "refresh/regenerate the context", "re-render the context", or similar — that means re-running the render step for the current project's .claude/snapctx/.
 ---
 
-# loadcontext — dense visual project context
+# loadcontext — condensed project context (text serializer)
 
-Renders a condensed snapshot of a project (file tree, docs, configs, code
-signatures, git log) into 1568x1568 pixel-font PNGs and loads them as vision
-input. A full frame carries ~34,000 chars (~8.5k text-tokens' worth) for
-~3,279 image tokens.
+Serializes a condensed snapshot of a project (file tree, docs, configs, code
+signatures, git log) into `.claude/snapctx/context.txt` and loads it as the
+session's project map. One Read call; the map pays for itself as soon as the
+session consults it twice.
+
+(Historical note: this skill previously rendered pixel-font PNG frames.
+Paired testing showed the frames cost more end-to-end than the same content
+as text in every regime and lose recall silently on archives — see
+experiments/pretest/RESULTS.md in the framed-context repo. Text is now the
+only load path; `--frames` remains in the CLI for reproducibility.)
 
 ## Steps
 
@@ -16,72 +22,58 @@ input. A full frame carries ~34,000 chars (~8.5k text-tokens' worth) for
 
    python3 ~/.claude/skills/loadcontext/snapctx.py render [PROJECT_DIR]
 
-   It prints one `FRAME: <path>` line per PNG plus token stats. If it prints
-   a `SMALL_PROJECT:` line instead, the project is cheaper as plain text —
-   Read the indicated `context.txt` and skip the frames and selftest.
+   It prints the serialized size and the `context.txt` path.
 
-2. Read every FRAME path with the Read tool. The frames are packed text in a
-   6x12 pixel font; `¶` glyphs mark line breaks in the original text.
+2. Read `.claude/snapctx/context.txt` with the Read tool (in chunks if it is
+   large). Use it as your project map for the session.
 
-3. Self-test: the stream begins with `SELFTEST:` followed by 8 space-separated
-   glyphs (lowercase letters + digits only — no uppercase). Verify your reading
-   (spaces optional; verify strips them):
+3. Tell the user what was loaded: sections, char count, approximate token
+   cost. Then proceed normally.
 
-   python3 ~/.claude/skills/loadcontext/snapctx.py verify <code-you-read> --out <outdir>
+## When to skip
 
-   On FAIL, zoom the code first (`zoom SELFTEST --out <outdir>`) and
-   retry once — a misread of the code itself is not a degraded pipeline. If it
-   still fails, warn the user that the image pipeline degraded the frames
-   (likely a non-high-res model tier) and fall back to normal file reading.
+For a single quick lookup ("where is function X?"), skip the preload —
+plain grep is cheaper for one-shot questions. Preload when the session will
+ask several questions of the project, or when working in a repo the model
+has no strong priors on.
 
-4. Tell the user what was loaded: sections, char count, and the token cost
-   printed by the renderer. Then proceed with the session normally, using the
-   imaged context as your project map.
+## Retrieving exact strings
 
-## Retrieving exact strings later
+The map is condensed; editing or quoting still means Reading the real file.
+For hashes, tokens, and exact strings, grep the repo (or `context.txt`)
+rather than trusting the map's rendering of them.
 
-Pixel text is near-perfect for prose, code, and numbers, but random-looking
-strings (hashes, tokens) can confuse glyph pairs (S/5, U/V, l/1, O/0). When
-you need such a string exactly, do NOT trust your first read — either:
-
-- grep the sidecar: `<outdir>/context.txt` holds the identical text, or
-- zoom: `python3 ~/.claude/skills/loadcontext/snapctx.py zoom '<regex>' --out <outdir>`
-  writes a 4x-magnified crop (`ZOOM: <path>`) — Read it.
-
-The default outdir is `PROJECT_DIR/.claude/snapctx/`. Add it to .gitignore if
-the user commits — it is derived state.
-
-## Docs mode (prose projects)
+## Docs mode (prose projects and archives)
 
 For projects whose value is documents rather than code (notes, journals,
-research), the code-map serializer misses the content. Use `--docs` to image
-the files themselves, in full:
+research), serialize the files themselves, in full:
 
     python3 ~/.claude/skills/loadcontext/snapctx.py render DIR \
       --docs 'START-HERE.md,notes/*.md' --out DIR/.claude/snapctx/core \
-      --max-chars 0 --max-frames 16
+      --max-chars 0
 
-Separate `--out` subdirectories act as named frame sets (e.g. a small `core`
-set loaded by default, big reference files as their own on-demand sets). Each
-set has its own selftest and sidecars. Same reading rules apply.
+Separate `--out` subdirectories act as named context sets (a small `core`
+set loaded by default, big reference files as their own on-demand sets).
 
-## Updating frames
+Scope note (measured): for exhaustive multi-concept audits over very large
+archives (~150+ documents), ask one concept per pass — single-pass recall
+over any monolithic preload degrades at that scale, while per-file retrieval
+reading stays exact. Cost still favors the preload ~3x per question.
 
-When the user says "update the frames", "refresh the frames", "regenerate
+## Updating the context
+
+When the user says "update the frames", "refresh the context", "regenerate
 context", or similar, they mean re-running step 1 for the current project so
-`.claude/snapctx/` reflects the repo as it is now:
-
-    python3 ~/.claude/skills/loadcontext/snapctx.py render [PROJECT_DIR]
-
-Report the new stats line. Only Read the regenerated frames if the user also
-wants the context loaded into this session (e.g. they say "update and load");
-a bare update is just the render. If the project has no `.claude/snapctx/`
-yet, this is a first-time setup — same command, and mention adding
-`.claude/snapctx/` to .gitignore.
+`.claude/snapctx/` reflects the repo as it is now. Report the new stats
+line. Only Read the regenerated context if the user also wants it loaded
+into this session; a bare update is just the render. First-time setup is the
+same command — mention adding `.claude/snapctx/` to .gitignore (derived
+state).
 
 ## Notes
 
-- Requires Pillow (`python3 -c "import PIL"`); if missing, `pip install pillow`.
-- Editing files still means Reading the real file first — the frames are a
-  map, not an editing source.
-- `--max-chars` (default 60000) and `--max-frames` (default 4) bound cost.
+- Pillow is only needed for the legacy `--frames` path; the text path has no
+  dependencies beyond Python 3.
+- The map is for orientation — editing files still means Reading the real
+  file first.
+- `--max-chars` (default 60000, 0 = unlimited) bounds cost.

@@ -1,66 +1,91 @@
 # framed-context
 
-Load condensed project context into [Claude Code](https://claude.com/claude-code)
-as pixel-font PNG images — SnapCompact-style visual context compression,
-rebuilt as a standalone skill.
+Condensed project and corpus context for [Claude Code](https://claude.com/claude-code)
+— a serializer that turns a repo or document archive into one compact text
+artifact, preloaded at session start.
 
-A full 1568×1568 frame carries ~34,000 characters (~8,500 text-tokens' worth)
-of project context for ~3,279 image tokens under Anthropic's pixel billing —
-about **2.6× more context per token**, loaded through the ordinary `Read`
-tool. No MCP server, no API changes, no external calls.
+**Measured wins** (paired A/B/C, 162 scored runs, Claude Sonnet 5,
+end-to-end billed cost — full methodology and data in
+[`experiments/pretest/`](experiments/pretest/RESULTS.md)):
 
-Inspired by [stencil.so's SnapCompact](https://stencil.so/blog/snapcompact)
-and the [oh-my-pi](https://github.com/can1357/oh-my-pi) implementation; this
-project applies the idea to *loading* context rather than replacing
-compaction, which fits Claude Code without touching its internals.
+- **−42%** cost per multi-question session on repos the model has never seen
+- **−68%** cost per question against a 160-document / ~750k-char archive,
+  versus organic retrieval, at parity accuracy
+
+```sh
+python3 snapctx.py render <project>     # -> .claude/snapctx/context.txt
+# in Claude Code: read .claude/snapctx/context.txt at session start
+```
+
+## The honest history: this project began as something else
+
+framed-context started as a pixel-font **image** compression scheme:
+serialize the project, rasterize it with a patched 6×12 bitmap font into PNG
+frames, and load ~2.6× more context per token under image billing
+(SnapCompact-style). The glyph legibility work succeeded — 20/20
+transcription with a zoom pass, selftest canaries, patched confusable
+glyphs.
+
+Then we asked the $6 question: *does it actually lower end-to-end cost?*
+Three rounds of paired testing later, the answer is no, everywhere:
+
+| regime | frames vs plain text, same content |
+|---|---|
+| single lookups, famous repos | **+34% cost** |
+| multi-question, unseen repos | **+50% cost** |
+| archive synthesis (188k chars) | **+72% $/success, 5/9 vs 9/9 accuracy** |
+| archive synthesis (750k chars, 23 frames) | **+230% $/success, 6/9 vs 8/9** |
+
+The 2.6× input-token density is real — and irrelevant. Sessions are billed
+mostly for output tokens (5× the input price) and turns, and reading pixels
+inflates both: the model spends "mental OCR" reasoning re-deriving what a
+text file would have handed it for free. Worse, at synthesis tasks pixel
+reading **fails silently** — exhaustive-identification answers came back
+looking complete with items missing, a failure no glyph selftest can catch
+because it happens at attention level, not OCR level. (This mirrors what
+[JetBrains found for rtk](https://blog.jetbrains.com/ai/2026/07/rtk-claude-code-token-savings/):
+compressing the cheap component of an agent bill while inflating the
+expensive one.)
+
+What *survived* testing was the part we almost didn't notice we'd built: the
+serializer. Preloading its plain-text output beat letting the agent explore
+organically in every regime with more than one question per session — the
+map pays for itself as soon as it's consulted twice.
+
+So that's what this tool is now. `render` emits `context.txt`; the PNG
+pipeline is kept behind `--frames` for reproducibility of the negative
+result, and `experiments/` preserves the whole record.
 
 ## How it works
 
-`snapctx.py render` serializes a project — compact file tree, README/CLAUDE.md,
-configs, function/class signatures across 9 languages, recent git log — packs
-it into a continuous `¶`-separated stream, and rasterizes it with a patched
-[Spleen](https://github.com/fcambus/spleen) 6×12 bitmap font into PNG frames.
-The model reads the frames as vision input and uses them as its project map.
+`snapctx.py render` serializes a project — compact file tree, README /
+CLAUDE.md, configs, function and class signatures across 9 languages, recent
+git log — into `.claude/snapctx/context.txt`. Load it with one Read at
+session start; grep the real files for anything that needs exactness.
 
-Safety rails, each one earned by a measured failure:
+### Docs mode
 
-- **`SELFTEST:` line** — every render embeds a random code from a
-  glyph-unambiguous alphabet (space-separated so each glyph stands alone;
-  verify strips the spaces); `snapctx.py verify` confirms the model actually
-  read it correctly before the session trusts the frames.
-- **`zoom` escape hatch** — random-looking strings (hashes, tokens) confuse
-  even patched glyphs on a first read; `snapctx.py zoom '<regex>'` writes a
-  4× crop that resolves them reliably.
-- **`context.txt` sidecar** — the identical text stays on disk for grep, so
-  exactness is never hostage to OCR.
-- **Patched glyphs** — Spleen's `S/5`, `U/V`, and `G/6` pairs differ by only
-  a pixel or two at 6×12; this repo ships versions with a rounded `S`,
-  pointed `V`, and open-top `6` (see `tools/patch_glyphs.py`).
+For prose corpora (notes, journals, research archives) the code-map
+serializer misses the content — serialize the documents themselves:
 
-## Measured results
+```sh
+python3 snapctx.py render DIR --docs 'notes/*.md' --max-chars 0
+```
 
-All experiments used an uncontaminated protocol: a script generates corpora
-seeded with random canaries, the model only ever sees the rendered pixels, and
-a scorer compares transcriptions to ground truth (details in
-`experiments/RESULTS.md`). Read through Claude Code's real image pipeline with
-Claude Fable 5:
+One scope note from testing: for *exhaustive* multi-concept audits over very
+large archives, ask one concept per pass — single-pass recall over any
+monolithic preload (text or pixels) degrades around the 160-document scale,
+while per-file retrieval reading stays exact. Cost still favors the preload
+by ~3× per question.
 
-| Configuration | Chars/frame | Raw read | After zoom pass |
-|---|---|---|---|
-| Spleen 8×16 | 19.2k | 16/20 | 19/20 |
-| Spleen 6×12 | 33.9k | 19/20 | **20/20** |
-| Spleen 5×8 | 61.3k | 9/20 | 16/20 — below the legibility cliff, do not use |
-| 6×12 packed | 33.9k | 13/20 | 18/20 |
-| 6×12 packed, patched font, **confusable-only strings** | 33.9k | 11/20 | **19/20** |
+## When NOT to use this
 
-Prose, code, and numbers read essentially perfectly at 6×12; residual errors
-concentrate in adversarial random strings, which the zoom pass resolves.
+Measured, not vibes: for a session that asks **one** quick question of a
+repo, plain agentic grep is cheaper than any preload (round 1: baseline
+$0.069 vs text $0.097 per task). Preload when the session will consult the
+map repeatedly; skip it for one-shot lookups.
 
 ## Install
-
-Requires Python 3 with Pillow, and a high-resolution-vision Claude model
-(Fable 5, Sonnet 5, Opus 4.8 — lower tiers downscale 1568px images, which
-destroys the font).
 
 ```sh
 git clone https://github.com/michaeldtimpe/framed-context
@@ -72,37 +97,24 @@ Then in any project, in Claude Code: `/loadcontext`
 ## CLI
 
 ```sh
-python3 snapctx.py render [DIR]            # frames -> DIR/.claude/snapctx/
-python3 snapctx.py verify CODE --out OUT   # check the SELFTEST reading
-python3 snapctx.py zoom 'REGEX' --out OUT  # 4x crop of matching rows
+python3 snapctx.py render [DIR]            # context.txt -> DIR/.claude/snapctx/
+python3 snapctx.py render [DIR] --frames   # legacy pixel frames + selftest
+python3 snapctx.py verify CODE --out OUT   # frames only: check SELFTEST reading
+python3 snapctx.py zoom 'REGEX' --out OUT  # frames only: 4x crop escape hatch
 ```
 
-`render` options: `--font 6x12|8x16`, `--max-chars N` (default 60000, 0 =
-unlimited), `--max-frames N` (default 4), `--out DIR`, `--docs 'globs'`.
+`render` options: `--docs 'globs'`, `--max-chars N` (default 60000, 0 =
+unlimited), `--out DIR`; `--frames` adds `--font 6x12|8x16`, `--max-frames N`.
 
-### Docs mode
+## The experiments
 
-For prose projects (notes, journals, research archives) the code-map
-serializer misses the content — image the documents themselves:
-
-```sh
-python3 snapctx.py render DIR --docs 'START-HERE.md,notes/*.md' \
-  --out DIR/.claude/snapctx/core --max-chars 0 --max-frames 16
-```
-
-Separate `--out` subdirectories act as named frame sets (a small default-load
-set, big reference files as their own on-demand sets), each with its own
-selftest and sidecars. This is how a 37-million-character personal archive
-becomes loadable: a 200k-token transcript that cannot fit in a context window
-as text is ~24 frames ≈ 79k image tokens.
-
-## Notes and limits
-
-- The frames are a **map, not an editing source** — the skill still reads
-  real files before modifying them.
-- Images cost extra "mental OCR" reasoning when the model retrieves from
-  them; this wins for once-per-session context loads, not per-turn hot data.
-- `.claude/snapctx/` is derived state — gitignore it.
+- [`experiments/RESULTS.md`](experiments/RESULTS.md) — the original glyph
+  legibility work (fonts, selftest alphabet, zoom pass). The pixels are
+  *legible*; that was never the problem.
+- [`experiments/pretest/`](experiments/pretest/RESULTS.md) — the three-round
+  cost/success campaign that killed the frames and validated the serializer:
+  harness, task sets, corpora generators, and full numbers. ~$62 of API
+  credits, reproducible end to end.
 
 ## License
 
