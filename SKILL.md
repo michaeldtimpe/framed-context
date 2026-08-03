@@ -1,6 +1,6 @@
 ---
 name: loadcontext
-description: Load condensed project context — a serialized text map of the repo (file tree, docs, signatures, git log) preloaded at session start. Measured to cut multi-question session cost ~42% on unfamiliar repos and ~68% per question on large doc archives. Use when the user asks to /loadcontext, "load project context", or wants a full-project overview loaded into the session. ALSO use when the user says "update the frames", "refresh/regenerate the context", "re-render the context", or similar — that means re-running the render step for the current project's .claude/snap-serializer/.
+description: Load condensed project context — a serialized text map of the repo (file tree, docs, signatures, git log) preloaded at session start. Measured to cut multi-question session cost ~42% on unfamiliar repos and ~68% per question on large doc archives. Use when the user asks to /loadcontext, "load project context", or wants a full-project overview loaded into the session. ALSO use when the user says "refresh/regenerate the context", "re-render the context", or similar — that means re-running the render step for the current project's .claude/snap-serializer/.
 ---
 
 # loadcontext — condensed project context (text serializer)
@@ -10,11 +10,6 @@ signatures, git log) into `.claude/snap-serializer/context.txt` and loads it as 
 session's project map. One Read call; the map pays for itself as soon as the
 session consults it twice.
 
-(Historical note: this skill previously rendered pixel-font PNG frames.
-Paired testing showed the frames cost more end-to-end than the same content
-as text in every regime and lose recall silently on archives — see
-experiments/pretest/RESULTS.md. The serializer is now the whole tool; the
-retired frame renderer lives in experiments/legacy-frames/ for reproducibility.)
 
 ## Steps
 
@@ -62,8 +57,7 @@ reading stays exact. Cost still favors the preload ~3x per question.
 
 ## Updating the context
 
-When the user says "update the frames", "refresh the context", "regenerate
-context", or similar, they mean re-running step 1 for the current project so
+When the user says "refresh the context", "regenerate context", or similar, they mean re-running step 1 for the current project so
 `.claude/snap-serializer/` reflects the repo as it is now. Report the new stats
 line. Only Read the regenerated context if the user also wants it loaded
 into this session; a bare update is just the render. First-time setup is the
