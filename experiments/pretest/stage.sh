@@ -10,17 +10,19 @@ echo "==> rsyncing framed-context repo (incl. pretest) to $HOST:$DEST"
 rsync -az --delete \
   --exclude '.git/' \
   --exclude '.env' \
-  --exclude 'experiments/pretest/work/' \
+  --exclude 'experiments/pretest/work*/' \
   --exclude '__pycache__/' \
   "$REPO_ROOT/" "$HOST:$DEST/"
 
 # The runner clones task repos with git; local-path tasks need a git repo.
-# NEVER -f here: .env (the API key) and work/ must stay out of the snapshot,
+# NEVER -f here: .env (the API key) and work*/ must stay out of the snapshot,
 # or every cloned workspace would hand the key to the agent under test.
+# work*/ (not work/): round 2's raw records lived in work2/ and were wiped
+# by the --delete above when this pattern only covered work/. Never again.
 ssh "$HOST" "cd $DEST && git init -q 2>/dev/null; \
   grep -qx '.env' .gitignore 2>/dev/null || echo '.env' >> .gitignore; \
-  grep -qx 'experiments/pretest/work/' .gitignore 2>/dev/null || echo 'experiments/pretest/work/' >> .gitignore; \
-  git rm -r -q --cached .env experiments/pretest/work 2>/dev/null; \
+  grep -qx 'experiments/pretest/work*/' .gitignore 2>/dev/null || echo 'experiments/pretest/work*/' >> .gitignore; \
+  git rm -r -q --cached .env 'experiments/pretest/work*' 2>/dev/null; \
   git add -A . 2>/dev/null; \
   git -c user.email=pretest@local -c user.name=pretest commit -qm snapshot -q 2>/dev/null; \
   git ls-files | grep -x '.env' && echo 'FATAL: .env is tracked in snapshot' && exit 1 || true"
